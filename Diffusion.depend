@@ -1,0 +1,6 @@
+# depslib dependency file v1.0
+1603339520 source:c:\users\bring\onedrive\documents\cis-677\pa-3\diffusion\main.c
+	<stdio.h>
+	<stdlib.h>
+	<time.h>
+
