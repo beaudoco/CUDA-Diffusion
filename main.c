@@ -5,12 +5,13 @@
 void processArr();
 //extern void computeArr(int * calcArr, int arrSize);
 void createFile(int *calcArr, int arrSize);
+extern void computeArr(float * metalRod, int arrSize, int timeSteps);
 
 int main()
 {
     int arrSize = 0;
     int timeSteps = 0;
-    double location = 0;
+    float location = 0;
 
     //FLUSH INPUT AND READ FILE NAME
     fflush(stdin);
@@ -24,8 +25,8 @@ int main()
 
     //FLUSH INPUT AND READ FILE NAME
     fflush(stdin);
-    printf("Enter the location of the: ");
-    scanf("%lf", &location);
+    printf("Enter the location to measure: ");
+    scanf("%f", &location);
 
     //BEGIN ARRAY CREATION
     processArr(arrSize, timeSteps, location);
@@ -36,12 +37,18 @@ int main()
 void processArr(int arrSize, int timeSteps, double location)
 {
     float *metalRod = NULL;
+    float *metalRodCUDA = NULL;
     int i = 0;
     int j = 0;
     float stepSize = 0.0;
-    int arrPos = 0;
+    int arrPos = 0;    
 
-    metalRod = malloc(sizeof(float) * arrSize);
+    metalRod = malloc(sizeof(float) * arrSize );
+    metalRodCUDA = malloc(sizeof(float) * arrSize);
+
+    //SETUP TIMER FOR FILE
+    struct timespec begin, end;
+    clock_gettime(CLOCK_REALTIME, &begin);
 
     for (i = 0; i < timeSteps + 1; i ++)
     {
@@ -50,6 +57,7 @@ void processArr(int arrSize, int timeSteps, double location)
             if (i == 0)
             {
                 metalRod[j] = 23.0;
+                metalRodCUDA[j] = 23.0;
             } else
             {
                 if (j == 0)
@@ -66,11 +74,39 @@ void processArr(int arrSize, int timeSteps, double location)
         }
     }
 
-    stepSize = 1.0 / arrSize;
+    //END CLOCK AND GET TIME
+    clock_gettime(CLOCK_REALTIME, &end);
+    long seconds = end.tv_sec - begin.tv_sec;
+    long nanoseconds = end.tv_nsec - begin.tv_nsec;
+    double elapsed = seconds + nanoseconds*1e-9;
 
+    
+
+    stepSize = 1.0 / arrSize;
     arrPos = (location / stepSize);
 
     printf("%lf \n", metalRod[arrPos]);
+
+    free(metalRod);
+
+    //SETUP TIMER FOR FILE
+    struct timespec begin2, end2;
+    clock_gettime(CLOCK_REALTIME, &begin2);
+
+    computeArr(metalRodCUDA, arrSize, timeSteps);
+
+    //END CLOCK AND GET TIME
+    clock_gettime(CLOCK_REALTIME, &end2);
+    long seconds2 = end2.tv_sec - begin2.tv_sec;
+    long nanoseconds2 = end2.tv_nsec - begin2.tv_nsec;
+    double elapsed2 = seconds2 + nanoseconds2*1e-9;
+
+    printf("%lf \n", metalRodCUDA[arrPos]);
+
+    printf("time taken for CPU: %f\n",elapsed);
+    printf("time taken for GPU: %f\n",elapsed2);
+
+    free(metalRodCUDA);
 }
 
 void createFile(int *calcArr, int arrSize)
