@@ -48,7 +48,7 @@ extern "C" void compute2DArr (int firstArrSize, int secondArrSize, float *metalR
     int size=firstArrSize*secondArrSize*sizeof(float);
     //allocate resources
     float **cell=(float**)malloc(size);
-    float *d_cell; cudaMalloc(&d_cell,sizeof(float) * size * size);
+    //float *d_cell; cudaMalloc(&d_cell,sizeof(float) * size * size);
     //float **d_cell;
 
     for (i = 0; i < size; i ++)
@@ -79,6 +79,7 @@ extern "C" void compute2DArr (int firstArrSize, int secondArrSize, float *metalR
     //cudaMemcpy(d_cell,cell,size * size,cudaMemcpyHostToDevice);
     
     size_t pitch;
+    float *d_cell;
     printf("\n \n \nhello \n \n \n");
     cudaMallocPitch((void**) &d_cell, &pitch, 128 * sizeof(float), size);
     printf("\n \n \nhello \n \n \n");
