@@ -7,7 +7,7 @@
 #define THREADS_PER_BLOCK 128
  
 // __global__ void compute_2d (int secondArrSize, float *arr[])
-__global__ void compute_2d (int secondArrSize, float *arr)
+__global__ void compute_2d (int secondArrSize, float *arr[])
 {
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
@@ -43,7 +43,7 @@ __global__ void compute_2d (int secondArrSize, float *arr)
 extern "C" void compute2DArr (int firstArrSize, int secondArrSize, float *metalRod, int timeSteps)
 {
     float *c_d = NULL;
-    int i = 0, j = 0, k = 0;
+    int i = 0, j = 0;
 
     int size=firstArrSize*secondArrSize*sizeof(float);
     //allocate resources
@@ -53,15 +53,9 @@ extern "C" void compute2DArr (int firstArrSize, int secondArrSize, float *metalR
 
     for (i = 0; i < size; i ++)
     {
-        //printf("hello \n");
         cell[i] = (float*)malloc(size);
-        //printf("hello \n");
-        //cudaMalloc(&d_cell[i],size);
     }
-    //int *node=(float*)malloc(size);
-    //float *d_cell; cudaMalloc(&d_cell,size);
-    //int *d_node; cudaMalloc(&d_node,size);
-    //initializeArray(cell,N);
+    
     for (i = 0; i < size; i ++)
     {
         for (j = 0; j < size; j ++)
@@ -69,17 +63,12 @@ extern "C" void compute2DArr (int firstArrSize, int secondArrSize, float *metalR
             cell[i][j] = 23.0;
         }
     }
-    // for (i = 0; i < size; i ++)
-    // {
-    //     printf("hello \n");
-    //     cudaMalloc (&d_cell[i], sizeof(float) * size);
-    // }
 
     //initializeArray(node,N);
     //cudaMemcpy(d_cell,cell,size * size,cudaMemcpyHostToDevice);
     
     size_t pitch;
-    float *d_cell;
+    float **d_cell;
     printf("\n \n \nhello \n \n \n");
     cudaMallocPitch((void**) &d_cell, &pitch, 128 * sizeof(float), size);
     printf("\n \n \nhello \n \n \n");
