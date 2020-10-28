@@ -42,23 +42,21 @@ __global__ void compute_2d (int secondArrSize, float *arr[])
 
 extern "C" void compute2DArr (int firstArrSize, int secondArrSize, float *metalRod, int timeSteps)
 {
-    float *c_d = NULL;
     int i = 0, j = 0;
-
     int size=firstArrSize*secondArrSize*sizeof(float);
     //allocate resources
-    float **cell=(float**)malloc(size);
+    float **cell=(float**)malloc(size * 2);
     //float *d_cell; cudaMalloc(&d_cell,sizeof(float) * size * size);
     //float **d_cell;
-
+    
     for (i = 0; i < size; i ++)
     {
         cell[i] = (float*)malloc(size);
     }
     
-    for (i = 0; i < size; i ++)
+    for (i = 0; i < firstArrSize; i ++)
     {
-        for (j = 0; j < size; j ++)
+        for (j = 0; j < secondArrSize; j ++)
         {
             cell[i][j] = 23.0;
         }
@@ -69,11 +67,8 @@ extern "C" void compute2DArr (int firstArrSize, int secondArrSize, float *metalR
     
     size_t pitch;
     float **d_cell;
-    printf("\n \n \nhello \n \n \n");
     cudaMallocPitch((void**) &d_cell, &pitch, 128 * sizeof(float), size);
-    printf("\n \n \nhello \n \n \n");
     cudaMemcpy2D(d_cell, pitch, cell, 256 * sizeof(float), secondArrSize * sizeof(float), firstArrSize, cudaMemcpyHostToDevice);
-    printf("hello");
     //cudaMemcpy(d_node,node,size,cudaMemcpyHostToDevice);
 
     //compute_win2D<<<nblocks, nthreads>>>(d_node,d_cell);
