@@ -6,7 +6,7 @@
 
 #define THREADS_PER_BLOCK 128
  
-__global__ void compute_d (float *c_d, int arrSize,int timeStep, int timeSteps)
+__global__ void compute_d (float *c_d, int arrSize, int timeStep, int timeSteps)
 {
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     if (x <= arrSize) {
