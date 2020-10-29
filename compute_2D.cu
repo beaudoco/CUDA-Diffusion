@@ -7,14 +7,15 @@
 #define THREADS_PER_BLOCK 128
  
 // __global__ void compute_2d (int secondArrSize, float *arr[])
-__global__ void compute_2d (int secondArrSize, float *arr[])
+__global__ void compute_2d ( int firstArrSize, int secondArrSize, float **arr)
 {
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
-    // if (x <= secondArrSize && y <= secondArrSize)
-    // {
-    //     arr[x][y] *= 2;
-    // }
+    if (x == 0 && x < firstArrSize && y == 0 && y < firstArrSize)
+    {
+        printf("Hello. I'm a thread %d in block %d \n", threadIdx.x, blockIdx.x);
+        // printf("%lf \n", arr[x][y]);
+    }
     // if (x <= arrSize) {
     //     if (x % 2 == timeStep % 2 && x <= timeStep)
     //     {
@@ -35,7 +36,7 @@ __global__ void compute_2d (int secondArrSize, float *arr[])
     //             }
     //         }
     //     }
-    //     __syncthreads();
+        __syncthreads();
 	// }
 		
 }
@@ -46,65 +47,58 @@ extern "C" void compute2DArr (int firstArrSize, int secondArrSize, float *metalR
     int size=firstArrSize*secondArrSize*sizeof(float);
     //allocate resources
     float **cell=(float**)malloc(size * 2);
-    //float *d_cell; cudaMalloc(&d_cell,sizeof(float) * size * size);
-    //float **d_cell;
-    
-    for (i = 0; i < size; i ++)
-    {
-        cell[i] = (float*)malloc(size);
-    }
+    float **cell2=(float**)malloc(size * 2);
     
     for (i = 0; i < firstArrSize; i ++)
     {
+        cell[i] = (float*)malloc(size);
+        cell2[i] = (float*)malloc(size);
         for (j = 0; j < secondArrSize; j ++)
         {
             cell[i][j] = 23.0;
         }
     }
-
-    //initializeArray(node,N);
-    //cudaMemcpy(d_cell,cell,size * size,cudaMemcpyHostToDevice);
     
     size_t pitch;
     float **d_cell;
-    cudaMallocPitch((void**) &d_cell, &pitch, 128 * sizeof(float), size);
-    cudaMemcpy2D(d_cell, pitch, cell, 256 * sizeof(float), secondArrSize * sizeof(float), firstArrSize, cudaMemcpyHostToDevice);
-    //cudaMemcpy(d_node,node,size,cudaMemcpyHostToDevice);
 
-    //compute_win2D<<<nblocks, nthreads>>>(d_node,d_cell);
-    compute_2d<<<ceil((float) secondArrSize/THREADS_PER_BLOCK), THREADS_PER_BLOCK>>>(secondArrSize, d_cell);
+    cudaMallocPitch((void**) &d_cell, &pitch, secondArrSize * sizeof(float), firstArrSize);
+    cudaError_t tmp = cudaMemcpy2D(d_cell, pitch, cell, secondArrSize * sizeof(float), secondArrSize * sizeof(float), firstArrSize, cudaMemcpyHostToDevice);
 
-    // for (i = 0; i < size; i++)
-    // {
-    //     for (j = 0; j < size; j ++)
-    //     {
-    //         printf("%lf \n", d_cell[i][j]);
-    //     }
-    // }
-    //free resources
-    free(cell);
-    //free(node);
-
-    cudaFree(d_cell);
-    //cudaFree(d_node);
-
-    // printf("%d %d \n", firstArrSize, secondArrSize);
-
-    // cudaMalloc (&tmpRod, sizeof(float) * firstArrSize );
-
-    // for (i = 0; i < firstArrSize; i ++)
-    //     cudaMalloc (&tmpRod[i], sizeof(float) * firstArrSize );
-
-    // printf("hello");
+    if (cudaSuccess != tmp)
+    {
+        printf("\n copy to GPU \n");
+        printf(cudaGetErrorString(tmp));
+    }
     
-    // //cudaMallocPitch((void**)&d_arr, &pitch, 256, 1024);
-    // //cudaMallocPitch((void**) &c_d, &pitch, secondArrSize, firstArrSize);
+    //dim3 dimBlock(128,128);
+    dim3 dimBlock(8,8);
+    dim3 dimGrid(1,1);
 
-    // // --- Copy array to device
-    // //cudaMemcpy2D(c_d, pitch, tmpRod, 256 * sizeof(float), secondArrSize * sizeof(float), firstArrSize, cudaMemcpyHostToDevice);
+    //compute_2d<<<ceil((float) secondArrSize/THREADS_PER_BLOCK), THREADS_PER_BLOCK>>>( firstArrSize, secondArrSize, d_cell);
+    compute_2d<<<dimGrid, dimBlock>>>( firstArrSize, secondArrSize, d_cell);
+
+    if (cudaSuccess != tmp)
+    {
+        printf("\n compute \n");
+        printf(cudaGetErrorString(tmp));
+    }
+
+    tmp = cudaMemcpy2D(cell2, secondArrSize * sizeof(float), d_cell, pitch, secondArrSize * sizeof(float), firstArrSize, cudaMemcpyDeviceToHost);
     
-    // //cudaMalloc ((void**) &c_d, sizeof(float) * arrSize);
-    // //cudaMemcpy (c_d, metalRod, sizeof(float) * secondArrSize, cudaMemcpyHostToDevice);
+    if (cudaSuccess != tmp)
+    {
+        printf("\n copy to CPU \n");
+        printf(cudaGetErrorString(tmp));
+    }
+
+    for (i = 0; i < firstArrSize; i++)
+    {
+        for (j = 0; j < secondArrSize; j ++)
+        {
+            printf("\n %lf ", cell2[i][j]);
+        }
+    }
     
     // for (i = 0; i < (2*(timeSteps - 1)) + secondArrSize; i ++)
     // {
@@ -114,10 +108,5 @@ extern "C" void compute2DArr (int firstArrSize, int secondArrSize, float *metalR
 	cudaError_t err = cudaGetLastError();
 	if (err != cudaSuccess)
 		printf ("CUDA error: %s\n", cudaGetErrorString(err));
-    
-    // //cudaMemcpy2D(metalRod, pitch, c_d, secondArrSize * sizeof(float), secondArrSize * sizeof(float), firstArrSize, cudaMemcpyDeviceToHost);
-	// //cudaMemcpy (metalRod, c_d, sizeof(float) * arrSize, cudaMemcpyDeviceToHost);
-    // //cudaFree (c_d);
-    // cudaFree(tmpRod);
 }
 

@@ -283,7 +283,7 @@ void process2DArr(int firstArrSize, int secondArrSize, int timeSteps, double loc
 
     printf("time taken for CPU: %f\n",elapsed);
     //printf("time taken for GPU: %f\n",elapsed2);
-    free(tmpCUDARod);
+    //free(tmpCUDARod);
     //free(metalRodCUDA);
 }
 
