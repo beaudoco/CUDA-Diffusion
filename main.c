@@ -5,7 +5,7 @@
 void processArr();
 void process2DArr();
 //extern void computeArr(int * calcArr, int arrSize);
-void createFile(int *calcArr, int arrSize);
+void createFile(float *calcArr, int arrSize);
 extern void computeArr(float * metalRod, int arrSize, int timeSteps);
 //extern void compute2DArr(float * metalRod, int firstArrSize, int secondArrSize, int timeSteps);
 extern void compute2DArr(int firstArrSize, int secondArrSize, float *metalRod, int timeSteps);
@@ -41,7 +41,7 @@ int main()
         scanf("%f", &location);
 
         //BEGIN ARRAY CREATION
-        //processArr(arrSize, timeSteps, location);
+        processArr(secondArrSize, timeSteps, location);
     } else
     {
         //FLUSH INPUT AND READ FILE NAME
@@ -75,6 +75,7 @@ void processArr(int arrSize, int timeSteps, double location)
 {
     float *metalRod = NULL;
     float *metalRodCUDA = NULL;
+    float *heatMap = NULL;
     int i = 0;
     int j = 0;
     float stepSize = 0.0;
@@ -82,6 +83,10 @@ void processArr(int arrSize, int timeSteps, double location)
 
     metalRod = malloc(sizeof(float) * arrSize );
     metalRodCUDA = malloc(sizeof(float) * arrSize);
+    heatMap = malloc(sizeof(float) * (timeSteps + 1));
+
+    stepSize = 1.0 / arrSize;
+    arrPos = (location / stepSize);
 
     //SETUP TIMER FOR FILE
     struct timespec begin, end;
@@ -108,6 +113,11 @@ void processArr(int arrSize, int timeSteps, double location)
                     metalRod[j] = (metalRod[j - 1] + metalRod[j + 1]) / 2.0;
                 }
             }
+
+            if(j == arrPos)
+            {
+                heatMap[i] = metalRod[j];
+            }
         }
     }
 
@@ -116,11 +126,6 @@ void processArr(int arrSize, int timeSteps, double location)
     long seconds = end.tv_sec - begin.tv_sec;
     long nanoseconds = end.tv_nsec - begin.tv_nsec;
     double elapsed = seconds + nanoseconds*1e-9;
-
-    
-
-    stepSize = 1.0 / arrSize;
-    arrPos = (location / stepSize);
 
     printf("%lf \n", metalRod[arrPos]);
 
@@ -144,6 +149,8 @@ void processArr(int arrSize, int timeSteps, double location)
     printf("time taken for GPU: %f\n",elapsed2);
 
     free(metalRodCUDA);
+
+    createFile(heatMap, timeSteps);
 }
 
 void process2DArr(int firstArrSize, int secondArrSize, int timeSteps, double location)
@@ -287,19 +294,19 @@ void process2DArr(int firstArrSize, int secondArrSize, int timeSteps, double loc
     //free(metalRodCUDA);
 }
 
-void createFile(int *calcArr, int arrSize)
+void createFile(float *calcArr, int arrSize)
 {
     //DECLARE VARS
     FILE *filep;
     int i = 0;
 
     //OPEN FILE
-    filep = fopen("force.txt", "w+");
+    filep = fopen("heat.txt", "w+");
 
     //WRITE RESULTS TO FILE
     for (i = 0; i < arrSize; i ++)
     {
-        fprintf(filep, "%d,", calcArr[i]);
+        fprintf(filep, "%lf,", calcArr[i]);
     }
 
     //CLOSE FILE
