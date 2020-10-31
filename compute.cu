@@ -4,7 +4,7 @@
 
 #include <stdio.h>
 
-#define THREADS_PER_BLOCK 64
+#define THREADS_PER_BLOCK 32
  
 __global__ void compute_d (float *c_d, int arrSize, int timeStep, int timeSteps)
 {
