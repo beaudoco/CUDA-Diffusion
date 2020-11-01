@@ -73,7 +73,7 @@ int main()
 	for (int i = 0; i < size; i++) {
 		//for (int j = 0; j < size * 3; j++) {
         for (int j = 0; j < v2.size() * 3; j++) {
-			color[0] = j % 256;
+			color[0] = 256 * (v2[j] / 100);
 			color[1] = 0;
 			color[2] = 0;
 			test[(i * 3 * v2.size()) + j] = color[j % 3];
