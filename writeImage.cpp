@@ -17,7 +17,7 @@ void writeImage(const char *fileName, int dimX, int dimY, unsigned char *data)
 	f.open(fileName, fstream::out | fstream::binary);
 
 	f << "P6" << endl;
-	f << dimX << " " << dimX << endl;
+	f << dimX << " " << dimY << endl;
 	f << "255" << endl;
 
 	for (int x = 0; x < dimX; x++) {
@@ -73,7 +73,7 @@ int main()
 	for (int i = 0; i < size; i++) {
 		//for (int j = 0; j < size * 3; j++) {
         for (int j = 0; j < v2.size(); j++) {
-			color[0] = 256 * (v2[j] / 100);
+			color[0] = 255 * (v2[j] / 86);
 			color[1] = 0;
 			color[2] = 0;
 			test[(i * 3 * v2.size()) + j] = color[j % 3];
