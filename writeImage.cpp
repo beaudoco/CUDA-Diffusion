@@ -75,7 +75,7 @@ int main()
 			color[0] = j % 256;
 			color[1] = 0;
 			color[2] = 0;
-			test[(i * 3 * v2.size()) + j] = color[j % 3];
+			test[(i * 3 * size) + j] = color[j % 3];
 		}
 	}
 
