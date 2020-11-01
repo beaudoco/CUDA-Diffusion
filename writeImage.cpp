@@ -71,9 +71,8 @@ int main()
 
 	// generates data (a stream of bytes) representing a series of RED gradients
 	for (int i = 0; i < size; i++) {
-		//for (int j = 0; j < size * 3; j++) {
-        for (int j = 0; j < v2.size(); j++) {
-			color[0] = 255 * (v2[j] / 86);
+		for (int j = 0; j < v2.size() * 3; j++) {
+			color[0] = j % 256;
 			color[1] = 0;
 			color[2] = 0;
 			test[(i * 3 * v2.size()) + j] = color[j % 3];
