@@ -78,6 +78,7 @@ void processArr(int arrSize, int timeSteps, double location)
     float *heatMap = NULL;
     int i = 0;
     int j = 0;
+    int k = 0;
     float stepSize = 0.0;
     int arrPos = 0;    
 
@@ -114,9 +115,9 @@ void processArr(int arrSize, int timeSteps, double location)
                 }
             }
 
-            if(j == arrPos)
+            if(j == arrPos && i % 10000 == 0)
             {
-                heatMap[i] = metalRod[j];
+                heatMap[k++] = metalRod[j];
             }
         }
     }
@@ -150,7 +151,7 @@ void processArr(int arrSize, int timeSteps, double location)
 
     free(metalRodCUDA);
 
-    createFile(heatMap, timeSteps);
+    createFile(heatMap, timeSteps/10000);
 }
 
 void process2DArr(int firstArrSize, int secondArrSize, int timeSteps, double location)
