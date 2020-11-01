@@ -21,8 +21,8 @@ void writeImage(const char *fileName, int dimX, int dimY, unsigned char *data)
 	f << "255" << endl;
 
 	for (int x = 0; x < dimX; x++) {
-		for (int y = 0; y < dimY * 3; y++) {
-			f << data[(x * 3 * dimY) + y];	
+		for (int y = 0; y < dimY; y++) {
+			f << data[(x * dimY) + y];	
 		}
 	}
 
@@ -76,7 +76,7 @@ int main()
 			color[0] = 256 * (v2[j] / 100);
 			color[1] = 0;
 			color[2] = 0;
-			test[(i * 3 * v2.size()) + j] = color[j % 3];
+			test[(i * v2.size()) + j] = color[j % 3];
 		}
 	}
 
