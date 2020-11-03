@@ -71,11 +71,9 @@ extern "C" void compute2DArr (int firstArrSize, int secondArrSize, float *metalR
         printf(cudaGetErrorString(tmp));
     }
     
-    //dim3 dimBlock(128,128);
     dim3 dimBlock(8,8);
     dim3 dimGrid(1,1);
-
-    //compute_2d<<<ceil((float) secondArrSize/THREADS_PER_BLOCK), THREADS_PER_BLOCK>>>( firstArrSize, secondArrSize, d_cell);
+    
     compute_2d<<<dimGrid, dimBlock>>>( firstArrSize, secondArrSize, d_cell);
 
     if (cudaSuccess != tmp)

@@ -1,18 +1,48 @@
+/*********************************************************
+This program takes a given dimension, partition size and
+and ammount of time steps to run for. These values are 
+used to calculate the heat diffusion of a 1 meter rod
+over time.
+
+@author: Collin Beaudoin
+@version: November 2020
+*********************************************************/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 
+/*********************************************************
+This section is used to declare the methods that shall be
+used throughout the program.
+*********************************************************/
+
 void processArr();
 void process2DArr();
-//extern void computeArr(int * calcArr, int arrSize);
 void createFile(float *calcArr, int arrSize);
 extern void computeArr(float * metalRod, int arrSize, int timeSteps);
-//extern void compute2DArr(float * metalRod, int firstArrSize, int secondArrSize, int timeSteps);
 extern void compute2DArr(int firstArrSize, int secondArrSize, float *metalRod, int timeSteps);
-//extern void compute2DArr(int firstArrSize, int secondArrSize, float **metalRod, int timeSteps);
+
+/*********************************************************
+This is the main function of the code, it is used to
+accept the parameters that shall be used throughout the
+program.
+
+@parameter arrType: This is used to select what 
+dimension the calculations will be ran in
+@parameter firstArrSize: This is used to figure out the
+length of the rod.
+@parameter secondArrSize: This is used to figure out the
+height of the rod.
+@parameter timeSteps: This is used to figure out the
+length of time to run the program for
+@parameter location: This is used to locate an exact 
+position and its temperature
+*********************************************************/
 
 int main()
 {
+    //DECLARE VARS
     int firstArrSize = 0, secondArrSize = 0;
     int timeSteps = 0;
     int arrType = 1;
@@ -25,17 +55,17 @@ int main()
 
     if (arrType == 1)
     {
-        //FLUSH INPUT AND READ FILE NAME
+        //FLUSH INPUT AND READ SLICES
         fflush(stdin);
         printf("Enter the amount of slices: ");
         scanf("%d", &secondArrSize);
 
-        //FLUSH INPUT AND READ FILE NAME
+        //FLUSH INPUT AND READ STEPS
         fflush(stdin);
         printf("Enter the amount of time steps: ");
         scanf("%d", &timeSteps);
 
-        //FLUSH INPUT AND READ FILE NAME
+        //FLUSH INPUT AND READ LOCATION
         fflush(stdin);
         printf("Enter the location to measure: ");
         scanf("%f", &location);
@@ -44,22 +74,22 @@ int main()
         processArr(secondArrSize, timeSteps, location);
     } else
     {
-        //FLUSH INPUT AND READ FILE NAME
+        //FLUSH INPUT AND READ SLICES
         fflush(stdin);
         printf("Enter the height amount of slices: ");
         scanf("%d", &firstArrSize);
 
-        //FLUSH INPUT AND READ FILE NAME
+        //FLUSH INPUT AND READ LENGTH
         fflush(stdin);
         printf("Enter the length amount of slices: ");
         scanf("%d", &secondArrSize);
 
-        //FLUSH INPUT AND READ FILE NAME
+        //FLUSH INPUT AND READ TIME STEPS
         fflush(stdin);
         printf("Enter the amount of time steps: ");
         scanf("%d", &timeSteps);
 
-        //FLUSH INPUT AND READ FILE NAME
+        //FLUSH INPUT AND READ LOCATION
         fflush(stdin);
         printf("Enter the location to measure: ");
         scanf("%f", &location);
@@ -71,8 +101,20 @@ int main()
     return 0;
 }
 
+/*********************************************************
+This function is used to iterate over the entire rod for
+the given amount of time. This is where the computation
+of the heat diffusion occurs
+
+@parameter timeSteps: The time to run calculations for
+@parameter arrSize: The overall size of the 1D array
+@parameter location: The location to measure
+@return: none
+*********************************************************/
+
 void processArr(int arrSize, int timeSteps, double location)
 {
+    //DECLARE VARS
     float *metalRod = NULL;
     float *metalRodCUDA = NULL;
     float *heatMap = NULL;
@@ -82,10 +124,12 @@ void processArr(int arrSize, int timeSteps, double location)
     float stepSize = 0.0;
     int arrPos = 0;    
 
+    //ALLOCATE MEMORY FOR ARRAYS
     metalRod = malloc(sizeof(float) * arrSize );
     metalRodCUDA = malloc(sizeof(float) * arrSize);
     heatMap = malloc(sizeof(float) * (timeSteps + 1));
 
+    //CALCULATE POSITION TO MEASURE
     stepSize = 1.0 / arrSize;
     arrPos = (location / stepSize);
 
@@ -93,16 +137,20 @@ void processArr(int arrSize, int timeSteps, double location)
     struct timespec begin, end;
     clock_gettime(CLOCK_REALTIME, &begin);
 
+    //DO FOR THE AMOUNT OF REQUIRED TIME STEPS
     for (i = 0; i < timeSteps + 1; i ++)
     {
+        //DO FOR THE ENTIRE ARRAY
         for (j = 0; j < arrSize; j ++)
         {
+            //CHECK IF INITIAL ARRAY AND SET TEMPERATURE
             if (i == 0)
             {
                 metalRod[j] = 23.0;
                 metalRodCUDA[j] = 23.0;
             } else
             {
+                //CHECK WHERE ON THE ARRAY THE VALUE IS
                 if (j == 0)
                 {
                     metalRod[j] = (100.0 + metalRod[j + 1]) / 2.0;
@@ -115,6 +163,7 @@ void processArr(int arrSize, int timeSteps, double location)
                 }
             }
 
+            //CREATING A SMALL SNAP SHOT OF DATA FOR IMAGES
             if(j == arrPos && i % 10000 == 0)
             {
                 heatMap[k++] = metalRod[j];
@@ -128,6 +177,7 @@ void processArr(int arrSize, int timeSteps, double location)
     long nanoseconds = end.tv_nsec - begin.tv_nsec;
     double elapsed = seconds + nanoseconds*1e-9;
 
+    //DISPLAY RESULTS
     printf("%lf \n", metalRod[arrPos]);
 
     free(metalRod);
@@ -136,6 +186,7 @@ void processArr(int arrSize, int timeSteps, double location)
     struct timespec begin2, end2;
     clock_gettime(CLOCK_REALTIME, &begin2);
 
+    //CALL CUDA PROGRAM
     computeArr(metalRodCUDA, arrSize, timeSteps);
 
     //END CLOCK AND GET TIME
@@ -144,18 +195,32 @@ void processArr(int arrSize, int timeSteps, double location)
     long nanoseconds2 = end2.tv_nsec - begin2.tv_nsec;
     double elapsed2 = seconds2 + nanoseconds2*1e-9;
 
+    //DISPLAY RESULTS
     printf("%lf \n", metalRodCUDA[arrPos]);
-
     printf("time taken for CPU: %f\n",elapsed);
     printf("time taken for GPU: %f\n",elapsed2);
 
     free(metalRodCUDA);
 
+    //CREATE FILE THAT IS USED TO CREATE HEATMAP
     createFile(heatMap, timeSteps/10000);
 }
 
+/*********************************************************
+This function is used to iterate over the entire rod for
+the given amount of time. This is where the computation
+of the heat diffusion occurs
+
+@parameter timeSteps: The time to run calculations for
+@parameter firstArrSize: The overall height of the rod
+@parameter secondArrSize: The overall length of the rod
+@parameter location: The location to measure
+@return: none
+*********************************************************/
+
 void process2DArr(int firstArrSize, int secondArrSize, int timeSteps, double location)
 {
+    //DECLARE VARS
     float metalRod[firstArrSize][secondArrSize];
     float metalRodCUDA[firstArrSize][secondArrSize];
     int i = 0, j = 0, k = 0;
@@ -166,65 +231,62 @@ void process2DArr(int firstArrSize, int secondArrSize, int timeSteps, double loc
     struct timespec begin, end;
     clock_gettime(CLOCK_REALTIME, &begin);
 
+    //DO UNTIL THE END OF TIME LIMIT
     for (i = 0; i < timeSteps + 1; i ++)
     {
+        //CHECK HEIGHT
         if (firstArrSize > 1)
         {
+            //DO FOR THE HEIGHT OF THE ARRAY
             for (j = 0; j < firstArrSize; j ++)
             {
+                //CREATE HOLDER FOR ARRAY
                 float tmpArr[secondArrSize];
+
+                //DO FOR THE LENGTH OF THE ARRAY
                 for (k = 0; k < secondArrSize; k ++)
                 {
+                    //CHECK POSITION OF ARRAY AND SET VALUES
                     if (i == 0)
                     {
                         metalRod[j][k] = 23.0;
                         metalRodCUDA[j][k] = 23.0;
                     } else
                     {
+                        //ASSIGN CORRECT VALUE BASED ON POSITION
                         if (j == 0 && k == 0)
                         {
                             tmpArr[k] = (100.0 + metalRod[j][k + 1] + metalRod[j + 1][k] + metalRod[j][k]) / 4.0;
-                            //metalRod[j][k] = (100.0 + metalRod[j][k + 1] + metalRod[j + 1][k] + metalRod[j][k]) / 4.0;
                         } else if (j == 0 && k == secondArrSize - 1)
                         {
                             tmpArr[k] = (metalRod[j][k - 1] + metalRod[j][k] + metalRod[j + 1][k] + metalRod[j][k]) / 4.0;
-                            //metalRod[j][k] = (metalRod[j][k - 1] + metalRod[j][k] + metalRod[j + 1][k] + metalRod[j][k]) / 4.0;
                         } else if (j == 0)
                         {
                             tmpArr[k] = (metalRod[j][k - 1] + metalRod[j][k + 1] + metalRod[j + 1][k] + metalRod[j][k]) / 4.0;
-                            //metalRod[j][k] = (metalRod[j][k - 1] + metalRod[j][k + 1] + metalRod[j + 1][k] + metalRod[j][k]) / 4.0;
                         } else if (j == firstArrSize - 1 && k == 0)
                         {
                             tmpArr[k] = (100.0 + metalRod[j][k + 1] + metalRod[j][k] + metalRod[j - 1][k]) / 4.0;
-                            //metalRod[j][k] = (100.0 + metalRod[j][k + 1] + metalRod[j][k] + metalRod[j - 1][k]) / 4.0;
                         } else if (j == firstArrSize - 1 && k == secondArrSize - 1)
                         {
-                            // printf("current: %lf \n", metalRod[j][k]);
                             tmpArr[k] = (metalRod[j][k - 1] + metalRod[j][k] + metalRod[j][k] + metalRod[j - 1][k]) / 4.0;
-                            //metalRod[j][k] = (metalRod[j][k - 1] + metalRod[j][k] + metalRod[j][k] + metalRod[j - 1][k]) / 4.0;
-                            // printf("left: %lf \n", metalRod[j][k - 1]);
-                            // printf("top: %lf \n", metalRod[j - 1][k]);
                         } else if (j == firstArrSize - 1)
                         {
                             tmpArr[k] = (metalRod[j][k - 1] + metalRod[j][k + 1] + metalRod[j][k] + metalRod[j - 1][k]) / 4.0;
-                            //metalRod[j][k] = (metalRod[j][k - 1] + metalRod[j][k + 1] + metalRod[j][k] + metalRod[j - 1][k]) / 4.0;
                         } else if (k == 0)
                         {
                             tmpArr[k] = (100.0 + metalRod[j][k + 1] + metalRod[j + 1][k] + metalRod[j - 1][k]) / 4.0;
-                            //metalRod[j][k] = (100.0 + metalRod[j][k + 1] + metalRod[j + 1][k] + metalRod[j - 1][k]) / 4.0;
                         } else if (k == secondArrSize - 1)
                         {
                             tmpArr[k] = (metalRod[j][k - 1] + metalRod[j][k] + metalRod[j + 1][k] + metalRod[j - 1][k]) / 4.0;
-                            //metalRod[j][k] = (metalRod[j][k - 1] + metalRod[j][k] + metalRod[j + 1][k] + metalRod[j - 1][k]) / 4.0;
                         } else
                         {
                             tmpArr[k] = (metalRod[j][k - 1] + metalRod[j][k + 1] + metalRod[j + 1][k] + metalRod[j - 1][k]) / 4.0;
-                            //metalRod[j][k] = (metalRod[j][k - 1] + metalRod[j][k + 1] + metalRod[j + 1][k] + metalRod[j - 1][k]) / 4.0;
                         }
                     }
                 }
                 if (i > 0)
                 {
+                    //ADD VALUES TO THE ROD
                     for (k = 0; k < secondArrSize; k ++)
                     {
                         metalRod[j][k] = tmpArr[k];
@@ -233,6 +295,7 @@ void process2DArr(int firstArrSize, int secondArrSize, int timeSteps, double loc
             }
         } else
         {
+            //THEY MADE A 1D ARRAY
             if (k == 0)
             {
                 metalRod[j][k] = (100.0 + metalRod[j][k + 1]) / 2.0;
@@ -252,24 +315,16 @@ void process2DArr(int firstArrSize, int secondArrSize, int timeSteps, double loc
     long nanoseconds = end.tv_nsec - begin.tv_nsec;
     double elapsed = seconds + nanoseconds*1e-9;
 
+    //CALCULATE WHERE TO MEASURE
     stepSize = 1.0 / firstArrSize;
     firsArrPos = (location / stepSize);
 
+    //CALCULATE WHERE TO MEASURE
     stepSize = 1.0 / secondArrSize;
     secondArrPos = (location / stepSize);
-    
-    // for (i = 0; i < firstArrSize; i ++)
-    // {
-    //     printf("\n");
-    //     for (j = 0; j < secondArrSize; j ++)
-    //     {
-    //         printf("%lf \n", metalRod[i][j]);
-    //     }
-    // }
 
+    //PRINT RESULTS
     printf("%lf \n", metalRod[firsArrPos][secondArrPos]);
-
-    //free(metalRod);
 
     //SETUP TIMER FOR FILE
     // struct timespec begin2, end2;
@@ -279,7 +334,6 @@ void process2DArr(int firstArrSize, int secondArrSize, int timeSteps, double loc
     tmpCUDARod = malloc(sizeof(float) * firstArrSize * secondArrSize );
 
     compute2DArr(firstArrSize, secondArrSize, tmpCUDARod, timeSteps);
-    //compute2DArr(firstArrSize, secondArrSize, metalRodCUDA, timeSteps);
 
     //END CLOCK AND GET TIME
     // clock_gettime(CLOCK_REALTIME, &end2);
@@ -294,6 +348,15 @@ void process2DArr(int firstArrSize, int secondArrSize, int timeSteps, double loc
     //free(tmpCUDARod);
     //free(metalRodCUDA);
 }
+
+/*********************************************************
+This function is used to output the calculated heat of the
+given position
+
+@parameter complexityArr: The file data to be output.
+@parameter arrLen: The overall size of the file.
+@return: none
+*********************************************************/
 
 void createFile(float *calcArr, int arrSize)
 {
